@@ -1,0 +1,564 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Simulación de Control - Análisis Económico</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; background-color: #f9f9f9; }
+/* The main quiz container will be hidden until the user clicks "Iniciar simulación" */
+#quiz-container { max-width: 800px; margin: auto; background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: none; }
+/* Start page container */
+#start-page { max-width: 800px; margin: auto; background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center; }
+#start-page button { padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #2196f3; color: #fff; border: none; border-radius: 4px; }
+#start-page button:hover { background-color: #1976d2; }
+
+/* Progress bar styling */
+.progress { display: flex; margin-bottom: 20px; flex-wrap: wrap; }
+.progress div {
+    height: 25px;
+    margin: 2px;
+    background-color: #e0e0e0;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 25px;
+    text-align: center;
+    color: #000;
+    flex: none;
+}
+.progress div.answered { background-color: #4caf50; }
+.progress div.current { border: 2px solid #2196f3; }
+/* Header segments in progress bar will have a distinct colour */
+.progress div.header-bar { background-color: #ffd54f; }
+.question { font-weight: bold; margin-bottom: 10px; }
+.options label { display: block; margin-bottom: 5px; }
+        /*
+         * Style the "Eliminar pregunta" option so that it is visually separate from the rest
+         * of the alternatives. We add a top margin and dashed border to distinguish it
+         * from the answer choices and use a muted colour so users can clearly see it is
+         * different. This helps highlight that selecting this option removes the question
+         * from scoring.
+         */
+        .options label.irrelevant-option {
+            display: block;
+            margin-top: 12px;
+            padding-top: 8px;
+            font-style: italic;
+            color: #777;
+            border-top: 1px dashed #aaa;
+        }
+#nav-buttons { margin-top: 20px; display: flex; justify-content: space-between; }
+button { padding: 8px 16px; font-size: 14px; cursor: pointer; }
+button:disabled { opacity: 0.5; cursor: default; }
+#results-container { margin-top: 20px; }
+.correct-answer { color: green; font-weight: bold; }
+.wrong-answer { color: red; font-weight: bold; }
+.irrelevant-answer { color: gray; font-style: italic; }
+.row-wrong { background-color: #ffe6e6; }
+.number-wrong { color: red; font-weight: bold; }
+table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+table, th, td { border: 1px solid #cccccc; }
+th, td { padding: 8px; text-align: left; }
+/* Style for the label showing which text each question comes from */
+.source-label {
+    font-size: 0.85em;
+    color: #666;
+    margin-bottom: 8px;
+    text-align: right;
+}
+</style>
+</head>
+<body>
+    <!-- Start page shown before the quiz begins -->
+    <div id="start-page">
+        <h2>Simulación de Control de Lecturas 2</h2>
+        <button id="start-button">Iniciar simulación</button>
+    </div>
+<div id="quiz-container">
+<h2>Simulación de Control de Análisis Económico</h2>
+<div id="progress" class="progress"></div>
+<div id="question-container">
+        <p class="question" id="question-text"></p>
+        <!-- Display the source of the question -->
+        <p id="source-label" class="source-label"></p>
+        <form id="options-form" class="options"></form>
+</div>
+<div id="nav-buttons">
+<button id="prev-button" onclick="prevQuestion()" disabled>Anterior</button>
+<button id="next-button" onclick="nextQuestion()">Siguiente</button>
+<button id="finish-button" onclick="finishQuiz()">Terminar</button>
+</div>
+<div id="results-container" style="display:none;"></div>
+</div>
+<script>
+var baseTf = [{"question": "El crecimiento inclusivo tiene como objetivo combinar el crecimiento económico con la igualdad de oportunidades para todas las personas.", "answer": true}, {"question": "En el marco de crecimiento inclusivo, la libertad se considera únicamente como la ausencia de intervención gubernamental.", "answer": false}, {"question": "El artículo sostiene que las políticas de redistribución deben centrarse en corregir los resultados del mercado en lugar de alterar las condiciones iniciales.", "answer": false}, {"question": "Según el artículo, los impuestos al carbono son una herramienta de política que se alinea con el crecimiento inclusivo porque tiene en cuenta las externalidades ambientales.", "answer": true}, {"question": "El gráfico de valores del artículo coloca a los libertarios en el cuadrante caracterizado por baja igualdad de riqueza y poca atención a las generaciones futuras.", "answer": true}, {"question": "El artículo sugiere que las intervenciones paternalistas, como prohibir ciertos alimentos, son ampliamente aceptadas como parte del crecimiento inclusivo.", "answer": false}, {"question": "El crecimiento inclusivo se centra principalmente en igualar los ingresos entre las personas en lugar de garantizar la igualdad de oportunidades.", "answer": false}, {"question": "El artículo destaca que la confianza en el gobierno juega un papel crucial en la determinación del apoyo a las políticas redistributivas.", "answer": true}, {"question": "La población de Chile de 60 años y más representaba aproximadamente el 19,8 % de la población total en 2024.", "answer": true}, {"question": "El informe muestra que el empleo informal sigue un patrón de U invertida a lo largo del ciclo de vida, siendo más bajo entre los jóvenes y más alto entre los trabajadores de mediana edad.", "answer": false}, {"question": "Entre los hombres de 65 a 69 años con baja educación, la informalidad es aproximadamente 30 puntos porcentuales mayor que entre aquellos con mayor educación.", "answer": true}, {"question": "El documento señala que el trabajo por cuenta propia representa aproximadamente la mitad del empleo de los trabajadores mayores.", "answer": true}, {"question": "Según el informe, el envejecimiento de la fuerza laboral ha provocado una disminución en la participación laboral de los adultos mayores.", "answer": false}, {"question": "El informe enfatiza que la alta informalidad entre los adultos mayores se debe principalmente a un alto nivel educativo.", "answer": false}, {"question": "El patrón en forma de U de la informalidad implica que tanto los trabajadores jóvenes como los mayores experimentan mayores tasas de empleo informal.", "answer": true}, {"question": "Las tasas de informalidad entre los trabajadores mayores en Chile son más altas para quienes están en quintiles de ingresos más bajos.", "answer": true}, {"question": "El artículo encuentra que eliminar aproximadamente el 24 % de los trabajadores de los mercados laborales rurales resultó en pocos cambios en los salarios y el empleo.", "answer": true}, {"question": "El desempleo disfrazado en los mercados laborales rurales significa que muchos trabajadores por cuenta propia son en realidad trabajadores asalariados racionados.", "answer": true}, {"question": "En las temporadas de escasez, los salarios disminuyen rápidamente cuando aumenta la oferta de trabajo.", "answer": false}, {"question": "El estudio muestra que la rigidez a la baja de los salarios se debe principalmente a los salarios mínimos impuestos por el gobierno.", "answer": false}, {"question": "El artículo informa que una fracción sustancial de los trabajadores (alrededor del 64 %) preferiría cambiar del trabajo por cuenta propia al trabajo asalariado si hubiera empleo disponible.", "answer": true}, {"question": "La compresión salarial se refiere a caídas pronunciadas de los salarios cuando disminuye la demanda laboral.", "answer": false}, {"question": "Las normas sociales y las sanciones comunitarias desempeñan un papel en evitar que los trabajadores acepten salarios más bajos.", "answer": true}, {"question": "Los investigadores sostienen que las encuestas suelen subestimar el desempleo en los mercados laborales rurales.", "answer": true}, {"question": "El artículo sostiene que el crecimiento económico depende fundamentalmente del número de personas que buscan nuevas ideas.", "answer": true}, {"question": "El PIB per cápita de EE. UU. ha crecido alrededor del 2 % anual durante los últimos 150 años.", "answer": true}, {"question": "El descenso en el crecimiento de la población se identifica como un viento de cola que acelerará el crecimiento futuro.", "answer": false}, {"question": "Las mejoras en la asignación del talento, como el aumento de la participación de las mujeres en la invención, se consideran vientos de cola.", "answer": true}, {"question": "La proporción de inventoras en Estados Unidos disminuyó del 4 % en 1976 al 12 % en 2020.", "answer": false}, {"question": "El artículo concluye que la inteligencia artificial conducirá con certeza al desempleo tecnológico y a una desaceleración permanente del crecimiento.", "answer": false}, {"question": "Según el artículo, los vientos en contra como el descenso de la población pueden frenar el crecimiento económico futuro.", "answer": true}, {"question": "La mejora en la asignación del talento explicó alrededor del 40 % del crecimiento en el ingreso per cápita de EE. UU.", "answer": true}];
+
+// Se añaden preguntas adicionales a la base de verdadero/falso para diversificar la nube y evitar la memorización
+baseTf = baseTf.concat([
+    // Preguntas adicionales para Agarwal 2024 - Crecimiento inclusivo
+    {"question": "Los economistas clásicos reconocieron que los bienes públicos y las externalidades son ejemplos de fallas del mercado que justifican la intervención estatal.", "answer": true},
+    {"question": "El crecimiento inclusivo propone que el éxito económico depende tanto de las condiciones iniciales como del esfuerzo y el talento.", "answer": false},
+    // Preguntas adicionales para OEUC 2025 - Fuerza laboral envejecida
+    {"question": "El informe muestra que la informalidad es 46 puntos porcentuales mayor en los quintiles de ingresos bajos que en los altos para hombres de 65 a 69 años y que esta diferencia persiste hasta al menos los 75 años.", "answer": true},
+    {"question": "Entre las mujeres, la diferencia de informalidad entre el primer y quinto quintil de ingresos es de aproximadamente 57 puntos porcentuales y se mantiene constante más allá de los 65 años.", "answer": false},
+    // Preguntas adicionales para Breza & Kaur 2024 - Mercados laborales informales
+    {"question": "La compresión salarial implica que trabajadores con diferentes habilidades reciben el mismo salario prevalente.", "answer": true},
+    {"question": "Según el estudio, la rigidez a la baja de los salarios conduce a una mayor duración del desempleo.", "answer": true},
+    // Preguntas adicionales para Jones 2023 - Perspectivas de crecimiento a largo plazo
+    {"question": "El descenso en la tasa de crecimiento de la población es considerado un viento en contra que puede ralentizar el crecimiento futuro.", "answer": true},
+    {"question": "El artículo sugiere que las mejoras temporales, como el aumento de la educación y la inversión en ideas, garantizan un crecimiento sostenido a largo plazo.", "answer": false}
+]);
+var baseMc = [{"question": "Según el marco de crecimiento inclusivo, ¿cuál de las siguientes opciones describe mejor el objetivo principal?", "options": ["Maximizar la riqueza total sin importar la distribución.", "Garantizar igualdad de oportunidades y crecimiento sostenible.", "Alcanzar una igualdad completa de resultados.", "Eliminar todas las formas de tributación."], "answer": 1}, {"question": "¿Qué instrumento de política se presenta en el artículo como medio para abordar las externalidades ambientales?", "options": ["Reducción de los impuestos a la herencia.", "Impuestos al carbono.", "Transferencias universales de efectivo.", "Desregulación de los mercados."], "answer": 1}, {"question": "En el gráfico de valores del artículo, ¿qué grupo otorga una fuerte importancia tanto a la igualdad de riqueza como a la consideración por las generaciones futuras?", "options": ["Libertarios.", "Crecimiento inclusivo.", "Progresistas.", "Progresistas verdes."], "answer": 3}, {"question": "El término \"predistribución\" en el artículo se refiere a:", "options": ["Redistribuir la riqueza a través de impuestos progresivos.", "Cambiar las condiciones económicas iniciales para garantizar igualdad de oportunidades.", "Ampliar la propiedad estatal de las empresas.", "Privatizar los bienes públicos."], "answer": 1}, {"question": "¿Cuál de las siguientes afirmaciones sobre los impuestos al carbono es coherente con el artículo?", "options": ["Son regresivos y, por lo tanto, incompatibles con el crecimiento inclusivo.", "Buscan corregir externalidades negativas gravando las emisiones de carbono.", "Aumentan principalmente los ingresos gubernamentales sin beneficios ambientales.", "Sustituyen a todas las demás formas de tributación."], "answer": 1}, {"question": "Según el artículo, la confianza en qué institución es particularmente importante para el éxito de las políticas de crecimiento inclusivo?", "options": ["Mercados privados.", "El banco central.", "El gobierno.", "Organismos internacionales."], "answer": 2}, {"question": "La discusión del artículo sobre paternalismo sugiere que:", "options": ["Prohibir ciertos alimentos poco saludables es apoyado universalmente.", "Los defensores del crecimiento inclusivo abogan por la ausencia de paternalismo y la focalización en intervenciones específicas.", "Las políticas paternalistas son necesarias para lograr la igualdad de ingresos.", "La renta básica universal es una política paternalista."], "answer": 1}, {"question": "En el gráfico de valores, el cuadrante \"Crecimiento inclusivo\" se describe mejor como:", "options": ["Enfocado únicamente en las generaciones presentes y la igualdad.", "Alto crecimiento sin considerar la igualdad ni las preocupaciones ambientales.", "Equilibrar el crecimiento con igualdad de oportunidades y justicia intergeneracional.", "Abogar por el control completo de la economía por parte del gobierno."], "answer": 2}, {"question": "¿Qué porcentaje de la población de Chile tenía 60 años o más según el informe?", "options": ["5 %.", "10 %.", "Aproximadamente 19,8 %.", "Más del 30 %."], "answer": 2}, {"question": "El patrón de empleo informal a lo largo del ciclo de vida se describe como:", "options": ["Disminuyendo de manera constante con la edad.", "Aumentando de manera constante con la edad.", "En forma de U, alto en la juventud y en la vejez.", "Constante en todas las edades."], "answer": 2}, {"question": "¿Qué grupo muestra una diferencia de 30 puntos porcentuales en la informalidad según su educación?", "options": ["Mujeres de 20 a 24 años.", "Hombres de 65 a 69 años.", "Mujeres de 50 a 54 años.", "Hombres de 30 a 34 años."], "answer": 1}, {"question": "Según el informe, aproximadamente la mitad de los trabajadores mayores son:", "options": ["Desempleados.", "Empleados informales.", "Trabajadores por cuenta propia.", "Trabajadores del sector público."], "answer": 2}, {"question": "El informe sugiere que las diferencias en informalidad por nivel educativo entre los hombres mayores son:", "options": ["Despreciables.", "Tan grandes como 30 puntos porcentuales.", "Favorables a los trabajadores con baja educación.", "No relacionadas con los quintiles de ingresos."], "answer": 1}, {"question": "¿Cuál de los siguientes NO se identifica como un factor asociado con la alta informalidad entre los trabajadores mayores?", "options": ["Bajo nivel educativo.", "Alto quintil de ingresos.", "Trabajo por cuenta propia.", "Patrón en forma de U del ciclo de vida."], "answer": 1}, {"question": "¿En qué hace hincapié la política del informe respecto a la fuerza laboral envejecida?", "options": ["Reducir la participación de los adultos mayores en la fuerza laboral.", "Fomentar el envejecimiento activo y oportunidades de empleo.", "Eliminar por completo el trabajo por cuenta propia.", "Incrementar exclusivamente la edad de jubilación obligatoria."], "answer": 1}, {"question": "El informe señala que la informalidad entre los adultos mayores es particularmente alta en:", "options": ["Empleos asalariados formales.", "Quintiles de ingresos altos.", "Grupos rurales y con baja educación.", "Sectores con tecnología avanzada."], "answer": 2}, {"question": "Cuando el experimento eliminó aproximadamente al 24 % de los trabajadores de las aldeas, ¿qué sucedió con los salarios y el empleo?", "options": ["Los salarios disminuyeron drásticamente.", "El empleo aumentó dramáticamente.", "Los salarios y el empleo cambiaron poco.", "Desapareció el trabajo por cuenta propia."], "answer": 2}, {"question": "El desempleo disfrazado en el artículo se refiere a:", "options": ["Los trabajadores ocultan su estado laboral a las autoridades.", "La presencia de muchos trabajadores por cuenta propia que están racionados y preferirían trabajos asalariados.", "Variaciones estacionales en la producción agrícola.", "La sobreestimación del desempleo por parte de las encuestas."], "answer": 1}, {"question": "En las temporadas de auge, los salarios en los mercados laborales rurales tienden a:", "options": ["Bajar debido al aumento de la oferta laboral.", "Permanecer constantes independientemente de la demanda.", "Aumentar rápidamente cuando aumenta la demanda laboral.", "Disminuir debido a la intervención gubernamental."], "answer": 2}, {"question": "¿Qué factor se identifica como una razón clave para la rigidez salarial a la baja?", "options": ["Fuerte cumplimiento gubernamental de los salarios mínimos.", "Normas sociales y consideraciones de justicia.", "Abundantes oportunidades de empleo.", "Altos niveles de desajustes de competencias."], "answer": 1}, {"question": "Según el artículo, el desempleo disfrazado puede conducir a qué patrón de trabajo por cuenta propia?", "options": ["Excesivo trabajo por cuenta propia debido al racionamiento de trabajadores.", "Bajos niveles de trabajo por cuenta propia porque los trabajos son abundantes.", "Trabajo por cuenta propia solo en temporadas.", "Altos salarios para los trabajadores por cuenta propia."], "answer": 0}, {"question": "El estudio sugiere que las encuestas existentes de desempleo en áreas rurales:", "options": ["Captan con precisión la magnitud del subempleo.", "Subestiman el desempleo debido a la mala clasificación del trabajo por cuenta propia.", "Sobreestiman el desempleo al contar a los trabajadores inactivos.", "Son irrelevantes para la investigación laboral."], "answer": 1}, {"question": "La rigidez salarial basada en normas implica que:", "options": ["Los empleadores son libres de reducir los salarios a su antojo.", "Los trabajadores pueden enfrentar sanciones sociales por aceptar salarios inferiores a la norma.", "Los salarios se ajustan rápidamente a las fuerzas del mercado.", "El desempleo se debe únicamente a la tecnología."], "answer": 1}, {"question": "En los experimentos, ¿qué grupo se identificó como proveedor de la fuerza laboral con desempleo disfrazado?", "options": ["Grandes empresas agrícolas.", "Pequeños agricultores y trabajadores asalariados racionados.", "Empleados gubernamentales.", "Profesionales urbanos."], "answer": 1}, {"question": "El artículo sugiere que el crecimiento económico depende de:", "options": ["La cantidad de capital físico.", "El número de personas que buscan nuevas ideas.", "El nivel de impuestos al consumo.", "Los niveles de deuda gubernamental."], "answer": 1}, {"question": "Durante los últimos 150 años, el PIB per cápita de EE. UU. ha crecido aproximadamente:", "options": ["0,5 % por año.", "1 % por año.", "2 % por año.", "5 % por año."], "answer": 2}, {"question": "¿Cuál de los siguientes se considera un viento en contra en el artículo?", "options": ["El ascenso de China e India.", "El descenso del crecimiento de la población.", "La mejora en la asignación del talento.", "Los avances en la inteligencia artificial."], "answer": 1}, {"question": "Las mejoras en la asignación del talento contribuyeron aproximadamente a qué proporción del crecimiento del ingreso per cápita de EE. UU.?", "options": ["10 %.", "20 %.", "40 %.", "80 %."], "answer": 2}, {"question": "¿Cómo cambió el porcentaje de mujeres entre los inventores de EE. UU. entre 1976 y 2020?", "options": ["Disminuyó del 12 % al 4 %.", "Aumentó del 4 % al 12 %.", "Se mantuvo en torno al 12 %.", "Cayó constantemente a casi cero."], "answer": 1}, {"question": "¿Cuál de los siguientes se identifica como un posible viento de cola para el crecimiento económico futuro?", "options": ["Descenso de la población mundial.", "Reducción en el nivel educativo.", "Avances en la inteligencia artificial.", "Políticas comerciales proteccionistas."], "answer": 2}, {"question": "La teoría de las ideas no rivales implica que:", "options": ["Las ideas no pueden compartirse sin disminuir su valor.", "El uso de una idea por una persona no disminuye la capacidad de otra para utilizarla.", "Solo los gobiernos pueden generar nuevas ideas.", "Los derechos de propiedad intelectual eliminan los vientos en contra."], "answer": 1}, {"question": "¿Qué factor NO se menciona como viento de cola en el artículo?", "options": ["El ascenso de China e India.", "La mejora en la asignación del talento.", "La inteligencia artificial.", "La disminución de las tasas de natalidad."], "answer": 3}];
+
+// Se añaden preguntas adicionales de opción múltiple para diversificar la nube de preguntas y evitar que las alternativas revelen la respuesta por su longitud
+baseMc = baseMc.concat([
+    // Preguntas adicionales para Agarwal 2024 - Crecimiento inclusivo
+    {"question": "¿Cuál de las siguientes afirmaciones representa mejor el principio de igualdad de oportunidades en el crecimiento inclusivo?", "options": ["Todos deben tener el mismo ingreso sin importar el esfuerzo.", "Cada individuo debe tener las mismas posibilidades de éxito basadas en talento y esfuerzo.", "Los impuestos al consumo deben eliminarse por completo.", "La riqueza debe concentrarse para incentivar inversión."], "answer": 1},
+    {"question": "¿Qué elemento se considera una falla del mercado que justifica la intervención del gobierno, según el artículo?", "options": ["Competencia perfecta.", "Bienes públicos y externalidades.", "Eficiencia en la asignación.", "Preferencias individuales heterogéneas."], "answer": 1},
+    // Preguntas adicionales para OEUC 2025 - Fuerza laboral envejecida
+    {"question": "¿Cuál es la brecha de informalidad entre los hombres del primer y quinto quintil de ingresos, según el informe?", "options": ["Alrededor de 20 puntos.", "Alrededor de 30 puntos.", "Alrededor de 46 puntos.", "Alrededor de 70 puntos."], "answer": 2},
+    {"question": "¿Qué se observa en el informe sobre la informalidad laboral de las mujeres a lo largo del ciclo de vida?", "options": ["La informalidad es menor en quintiles bajos.", "La brecha de informalidad se reduce después de los 65 años.", "No existe diferencia por nivel educativo.", "La informalidad es constante en todos los grupos."], "answer": 1},
+    // Preguntas adicionales para Breza & Kaur 2024 - Mercados laborales informales
+    {"question": "¿Cuál es la descripción correcta de la compresión salarial en los mercados laborales informales?", "options": ["Los salarios fluctúan con la oferta y demanda.", "Los salarios de trabajadores con distinta productividad se igualan.", "Los trabajadores negocian individualmente sus salarios.", "La rigidez salarial es causada por políticas gubernamentales."], "answer": 1},
+    {"question": "¿Por qué las normas sociales pueden causar rigidez a la baja de los salarios?", "options": ["Porque promueven la competencia salarial.", "Porque los trabajadores temen sanciones por aceptar menos que la norma.", "Porque los gobiernos aplican leyes de salario mínimo.", "Porque las empresas no pueden reducir salarios en temporadas altas."], "answer": 1},
+    // Preguntas adicionales para Jones 2023 - Perspectivas de crecimiento a largo plazo
+    {"question": "¿Qué factores se mencionan como vientos de cola potenciales en el crecimiento económico futuro?", "options": ["Reducción del gasto público.", "El ascenso de China e India y la mejora en la asignación del talento.", "Disminución del nivel educativo.", "Reducción de la esperanza de vida."], "answer": 1},
+    {"question": "¿Cuál de los siguientes factores se identifica como temporal en la teoría de crecimiento del artículo?", "options": ["Aumento de la población.", "Aumento de la educación y la inversión en ideas.", "Avances en la inteligencia artificial.", "Ascenso de China e India."], "answer": 1}
+]);
+var selectedQuestions = [];
+var currentIndex = 0;
+var responses = [];
+// Total number of non-header questions (used for numbering)
+var totalNonHeader = 0;
+function shuffle(array) {
+    for (var i = array.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+    }
+    return array;
+}
+
+// Assign a source (text) to each base question. We divide the base arrays into blocks
+// of 8 questions, corresponding to each reading. This allows us to later show
+// from which text each question comes.
+function assignSources() {
+    var sources = [
+        'Agarwal 2024 - Crecimiento inclusivo',
+        'OEUC 2025 - Fuerza laboral envejecida',
+        'Breza & Kaur 2024 - Mercados laborales informales',
+        'Jones 2023 - Perspectivas de crecimiento a largo plazo'
+    ];
+    // Calcular el tamaño de los grupos dinámicamente para cada tipo de pregunta. Esto
+    // asegura que las fuentes se asignen de manera uniforme incluso cuando el número
+    // de preguntas cambia (por ejemplo, cuando se agregan más preguntas a la base).
+    var tfGroupSize = Math.floor(baseTf.length / sources.length);
+    var mcGroupSize = Math.floor(baseMc.length / sources.length);
+    for (var i = 0; i < baseTf.length; i++) {
+        var tfIndex = Math.floor(i / tfGroupSize);
+        // Asegurarse de no desbordar el arreglo de fuentes
+        if (tfIndex >= sources.length) tfIndex = sources.length - 1;
+        baseTf[i].source = sources[tfIndex];
+    }
+    for (var j = 0; j < baseMc.length; j++) {
+        var mcIndex = Math.floor(j / mcGroupSize);
+        if (mcIndex >= sources.length) mcIndex = sources.length - 1;
+        baseMc[j].source = sources[mcIndex];
+    }
+}
+
+// Ajustar ciertas opciones de preguntas de opción múltiple para evitar que la respuesta correcta sea claramente la más larga
+function adjustOptionLengths() {
+    baseMc.forEach(function(q) {
+        // Ajustar la pregunta sobre predistribución para acortar la respuesta correcta
+        if (q.question && q.question.indexOf('predistribución') !== -1) {
+            if (Array.isArray(q.options) && q.options.length > 1) {
+                q.options[1] = 'Modificar condiciones iniciales para dar igualdad de oportunidades.';
+            }
+        }
+        // Ajustar la pregunta sobre paternalismo para equilibrar la longitud de las alternativas
+        if (q.question && q.question.indexOf('paternalismo sugiere') !== -1) {
+            q.options = [
+                'Prohibir ciertos alimentos poco saludables es apoyado universalmente en todas las comunidades.',
+                'Prefieren evitar el paternalismo y focalizar intervenciones específicas.',
+                'Las políticas paternalistas son necesarias para lograr la igualdad de ingresos y oportunidades.',
+                'La renta básica universal es una política paternalista promovida ampliamente.'
+            ];
+        }
+        // Ajustar la pregunta sobre diferencias en informalidad por nivel educativo para acortar la respuesta correcta
+        if (q.question && q.question.indexOf('diferencias en informalidad por nivel educativo') !== -1) {
+            q.options = [
+                'Despreciables y sin importancia.',
+                'Cercanas a 30 puntos porcentuales.',
+                'Favorables a los trabajadores con baja educación.',
+                'No relacionadas con los quintiles de ingresos.'
+            ];
+            // La respuesta correcta sigue siendo la opción de índice 1
+            q.answer = 1;
+        }
+        // Ajustar la pregunta sobre desempleo disfrazado y trabajo por cuenta propia para acortar la respuesta correcta
+        if (q.question && q.question.indexOf('trabajo por cuenta propia') !== -1 && q.question.indexOf('disfrazado') !== -1) {
+            if (Array.isArray(q.options) && q.options.length > 0) {
+                q.options[0] = 'Excesivo trabajo por cuenta propia por racionamiento de trabajadores.';
+            }
+        }
+        // Ajustar la pregunta sobre rigidez salarial basada en normas
+        if (q.question && q.question.indexOf('La rigidez salarial basada en normas') !== -1) {
+            q.options = [
+                'Los empleadores son libres de reducir los salarios cuando lo estimen conveniente.',
+                'Trabajadores enfrentan sanciones sociales por aceptar salarios inferiores a la norma.',
+                'Los salarios se ajustan rápidamente a las fuerzas del mercado en todos los sectores.',
+                'El desempleo se debe únicamente a la tecnología.'
+            ];
+            q.answer = 1;
+        }
+        // Ajustar la pregunta adicional sobre igualdad de oportunidades en crecimiento inclusivo
+        if (q.question && q.question.indexOf('principio de igualdad de oportunidades en el crecimiento inclusivo') !== -1) {
+            q.options = [
+                'Todos deben tener el mismo ingreso sin importar el esfuerzo y la contribución personal.',
+                'Cada persona debe tener igualdad de oportunidades basada en su talento y esfuerzo.',
+                'Los impuestos al consumo deben eliminarse por completo en todos los mercados.',
+                'La riqueza debe concentrarse para incentivar inversión y acumular capital.'
+            ];
+            q.answer = 1;
+        }
+        // Ajustar la pregunta adicional sobre vientos de cola potenciales
+        if (q.question && q.question.indexOf('vientos de cola potenciales en el crecimiento económico futuro') !== -1) {
+            q.options = [
+                'Reducción del gasto público y del déficit fiscal gubernamental.',
+                'El ascenso de China e India y la mejora en la asignación del talento.',
+                'Disminución del nivel educativo y deterioro de la calidad escolar.',
+                'Reducción de la esperanza de vida y aumento de la mortalidad.'
+            ];
+            q.answer = 1;
+        }
+    });
+}
+function sampleUnique(baseArray, count) {
+    var copy = baseArray.slice();
+    shuffle(copy);
+    return copy.slice(0, Math.min(count, copy.length));
+}
+function selectQuestions() {
+    // Ensure that sources are assigned before sampling
+    assignSources();
+    // Ajustar longitudes de opciones de múltiples elecciones antes de seleccionar preguntas
+    adjustOptionLengths();
+    // Sample the desired number of true/false and multiple-choice questions
+    var chosenTF = sampleUnique(baseTf, 20);
+    var chosenMC = sampleUnique(baseMc, 10);
+    var combined = chosenTF.concat(chosenMC);
+    // Create shallow copies and add a type property
+    var questionObjs = combined.map(function(q) {
+        var newObj = {};
+        for (var key in q) {
+            newObj[key] = q[key];
+        }
+        // Determinar el tipo de pregunta en función de la existencia de opciones
+        newObj.type = q.options ? 'mc' : 'tf';
+        // Para preguntas de opción múltiple, barajar las alternativas y actualizar el índice de respuesta correcta.
+        if (newObj.type === 'mc' && Array.isArray(newObj.options)) {
+            // Copiar las opciones originales para no modificar la base
+            var opts = newObj.options.slice();
+            var correctOpt = opts[newObj.answer];
+            shuffle(opts);
+            newObj.options = opts;
+            // El nuevo índice es donde quedó la opción correcta después de barajar
+            newObj.answer = opts.indexOf(correctOpt);
+        }
+        return newObj;
+    });
+    // Group questions by source and shuffle each group to randomize order within groups
+    var groups = {};
+    for (var i = 0; i < questionObjs.length; i++) {
+        var s = questionObjs[i].source;
+        if (!groups[s]) groups[s] = [];
+        groups[s].push(questionObjs[i]);
+    }
+    // Shuffle each group for randomness
+    for (var key in groups) {
+        shuffle(groups[key]);
+    }
+    // Build a final list with header objects and grouped questions
+    var finalList = [];
+    var counts = {};
+    // Sort sources alphabetically for consistent ordering
+    var sortedSources = Object.keys(groups).sort();
+    sortedSources.forEach(function(src) {
+        counts[src] = groups[src].length;
+    });
+    sortedSources.forEach(function(src) {
+        // Insert a header object before each group
+        finalList.push({ type: 'header', source: src, question: 'Preguntas del texto ' + src, count: counts[src] });
+        finalList = finalList.concat(groups[src]);
+    });
+    selectedQuestions = finalList;
+    responses = new Array(selectedQuestions.length);
+    // Pre-fill responses for header pages so they appear answered in the progress bar
+    for (var idx = 0; idx < selectedQuestions.length; idx++) {
+        if (selectedQuestions[idx].type === 'header') {
+            responses[idx] = { header: true };
+        }
+    }
+    // Count total non-header questions for numbering
+    totalNonHeader = 0;
+    for (var idx2 = 0; idx2 < selectedQuestions.length; idx2++) {
+        if (selectedQuestions[idx2].type !== 'header') {
+            totalNonHeader++;
+        }
+    }
+}
+function renderProgress() {
+    var progressDiv = document.getElementById('progress');
+    progressDiv.innerHTML = '';
+    // Counter for numbering only non-header questions
+    var qCounter = 0;
+    var total = selectedQuestions.length;
+    for (var i = 0; i < total; i++) {
+        var bar = document.createElement('div');
+        // Set dynamic width so the bars fill the container evenly
+        bar.style.width = (100 / total) + '%';
+        // Mark header segments with a special class and leave them without a number
+        if (selectedQuestions[i].type === 'header') {
+            bar.classList.add('header-bar');
+            bar.textContent = '';
+        } else {
+            qCounter++;
+            bar.textContent = qCounter;
+        }
+        // Mark answered questions (including header pages) so the bar turns green
+        if (responses[i] !== undefined) {
+            bar.classList.add('answered');
+        }
+        // Highlight the current question
+        if (i === currentIndex) {
+            bar.classList.add('current');
+        }
+        // Allow navigation by clicking on the bar
+        (function(index) {
+            bar.addEventListener('click', function() { goToQuestion(index); });
+        })(i);
+        progressDiv.appendChild(bar);
+    }
+}
+function renderQuestion() {
+    var questionObj = selectedQuestions[currentIndex];
+    var questionTextEl = document.getElementById('question-text');
+    var sourceLabelEl = document.getElementById('source-label');
+    var form = document.getElementById('options-form');
+    form.innerHTML = '';
+    // Handle header pages that introduce a group of questions
+    if (questionObj.type === 'header') {
+        questionTextEl.textContent = questionObj.question + ' (' + questionObj.count + ' preguntas)';
+        sourceLabelEl.textContent = '';
+        form.innerHTML = '<p>Haz clic en Siguiente para comenzar.</p>';
+    } else {
+        // Compute the question number (excluding headers)
+        var questionNumber = 0;
+        for (var i = 0; i <= currentIndex; i++) {
+            if (selectedQuestions[i].type !== 'header') {
+                questionNumber++;
+            }
+        }
+        // Set the question text and source label
+        questionTextEl.textContent = 'Pregunta ' + questionNumber + ' de ' + totalNonHeader + ': ' + questionObj.question;
+        sourceLabelEl.textContent = 'Texto: ' + questionObj.source;
+        // Build radio buttons depending on type
+        if (questionObj.type === 'tf') {
+            var options = ['Verdadero', 'Falso', 'Eliminar pregunta'];
+            for (var idx = 0; idx < options.length; idx++) {
+                var label = document.createElement('label');
+                if (idx === options.length - 1) { label.className = 'irrelevant-option'; }
+                var input = document.createElement('input');
+                input.type = 'radio';
+                input.name = 'option';
+                input.value = idx;
+                if (responses[currentIndex] !== undefined && responses[currentIndex].selected === idx) {
+                    input.checked = true;
+                }
+                (function(index) {
+                    input.addEventListener('change', function() { saveResponse(index); });
+                })(idx);
+                label.appendChild(input);
+                label.appendChild(document.createTextNode(' ' + options[idx]));
+                form.appendChild(label);
+            }
+        } else {
+            var opts = questionObj.options.slice();
+            opts.push('Eliminar pregunta');
+            for (var j = 0; j < opts.length; j++) {
+                var label2 = document.createElement('label');
+                if (j === opts.length - 1) { label2.className = 'irrelevant-option'; }
+                var input2 = document.createElement('input');
+                input2.type = 'radio';
+                input2.name = 'option';
+                input2.value = j;
+                if (responses[currentIndex] !== undefined && responses[currentIndex].selected === j) {
+                    input2.checked = true;
+                }
+                (function(index2) {
+                    input2.addEventListener('change', function() { saveResponse(index2); });
+                })(j);
+                label2.appendChild(input2);
+                label2.appendChild(document.createTextNode(' ' + opts[j]));
+                form.appendChild(label2);
+            }
+        }
+    }
+    document.getElementById('prev-button').disabled = currentIndex === 0;
+    document.getElementById('next-button').disabled = currentIndex === selectedQuestions.length - 1;
+    renderProgress();
+}
+function saveResponse(selected) {
+    responses[currentIndex] = { selected: selected };
+    renderProgress();
+}
+function nextQuestion() {
+    if (currentIndex < selectedQuestions.length - 1) {
+        currentIndex++;
+        renderQuestion();
+    }
+}
+function prevQuestion() {
+    if (currentIndex > 0) {
+        currentIndex--;
+        renderQuestion();
+    }
+}
+function goToQuestion(index) {
+    currentIndex = index;
+    renderQuestion();
+}
+function finishQuiz() {
+    // Count of correct answers and total considered questions.  Answers left blank count as incorrect.
+    var correct = 0;
+    var total = 0;
+    var resultsHTML = '<h3>Resultados</h3>';
+    resultsHTML += '<p>Puedes revisar cada pregunta abajo. La respuesta correcta está marcada en verde y tu respuesta incorrecta aparece en rojo. Si elegiste "Eliminar pregunta", esa pregunta se excluye del cálculo.</p>';
+    resultsHTML += '<table><tr><th>#</th><th>Pregunta</th><th>Alternativas</th><th>Tu respuesta</th></tr>';
+    var questionCounter = 1;
+    for (var idx = 0; idx < selectedQuestions.length; idx++) {
+        var q = selectedQuestions[idx];
+        // Skip header pages in the results
+        if (q.type === 'header') {
+            continue;
+        }
+        var resp = responses[idx];
+        var rowClass = '';
+        var row = '';
+        // Determine if question is eliminated
+        var eliminated = false;
+        if (q.type === 'tf') {
+            if (resp && resp.selected === 2) { eliminated = true; }
+        } else {
+            if (resp && resp.selected === q.options.length) { eliminated = true; }
+        }
+        // Determine if the user answered and whether it was correct. Questions marked as
+        // "Eliminar pregunta" are not counted.  Unanswered questions count as incorrect.
+        var userAnswered = (resp !== undefined);
+        var isCorrect = false;
+        if (!eliminated) {
+            total++;
+            if (userAnswered) {
+                if (q.type === 'tf') {
+                    isCorrect = (q.answer && resp.selected === 0) || (!q.answer && resp.selected === 1);
+                } else {
+                    isCorrect = (resp.selected === q.answer);
+                }
+                if (isCorrect) {
+                    correct++;
+                } else {
+                    rowClass = 'row-wrong';
+                }
+            } else {
+                // unanswered counts as incorrect
+                rowClass = 'row-wrong';
+            }
+        }
+        row += '<tr' + (rowClass ? ' class="' + rowClass + '"' : '') + '>';
+        // number cell uses questionCounter because headers are skipped
+        var numberCell = (rowClass ? '<span class="number-wrong">' + questionCounter + '</span>' : questionCounter);
+        row += '<td>' + numberCell + '</td><td>' + q.question + '</td><td>';
+        // Build alternatives with correct marking
+        var optionsList = [];
+        if (q.type === 'tf') {
+            optionsList = ['Verdadero', 'Falso'];
+        } else {
+            optionsList = q.options;
+        }
+        var optsHTML = '';
+        for (var i = 0; i < optionsList.length; i++) {
+            var text = optionsList[i];
+            var classes = '';
+            if ((q.type === 'tf' && ((q.answer && i === 0) || (!q.answer && i === 1))) || (q.type === 'mc' && i === q.answer)) {
+                classes = 'correct-answer';
+            }
+            optsHTML += '<div class="' + classes + '">' + String.fromCharCode(65 + i) + '. ' + text + '</div>';
+        }
+        row += optsHTML + '</td>';
+        // user response cell
+        if (resp === undefined) {
+            row += '<td class="wrong-answer">Sin responder</td>';
+        } else if (eliminated) {
+            row += '<td class="irrelevant-answer">Pregunta eliminada</td>';
+        } else {
+            var selectedIdx = resp.selected;
+            if (q.type === 'tf') {
+                isCorrect = (q.answer && selectedIdx === 0) || (!q.answer && selectedIdx === 1);
+            } else {
+                isCorrect = (selectedIdx === q.answer);
+            }
+            if (isCorrect) {
+                row += '<td class="correct-answer">' + optionsList[selectedIdx] + '</td>';
+            } else {
+                row += '<td class="wrong-answer">' + optionsList[selectedIdx] + ' (Incorrecto)</td>';
+            }
+        }
+        row += '</tr>';
+        resultsHTML += row;
+        questionCounter++;
+    }
+    resultsHTML += '</table>';
+    var scorePct = total > 0 ? (correct / total) : 0;
+    var grade = Math.min((scorePct * (7 / 0.8)), 7);
+    resultsHTML = '<p>Puntaje: ' + correct + ' de ' + total + ' preguntas consideradas.</p><p>Porcentaje de aciertos: ' + (scorePct * 100).toFixed(2) + ' %</p><p>Nota: ' + grade.toFixed(2) + ' (máximo 7 con escala al 80 %)</p>' + resultsHTML;
+    var resultContainer = document.getElementById('results-container');
+    resultContainer.innerHTML = resultsHTML;
+    resultContainer.style.display = 'block';
+    document.getElementById('question-container').style.display = 'none';
+    document.getElementById('nav-buttons').style.display = 'none';
+    var repeatBtn = document.createElement('button');
+    repeatBtn.textContent = 'Volver a hacer simulación';
+    repeatBtn.onclick = function() { window.location.reload(); };
+    resultContainer.appendChild(repeatBtn);
+}
+function initQuiz() {
+    selectQuestions();
+    renderProgress();
+    renderQuestion();
+}
+// Start the quiz after the user clicks the start button on the start page
+function startQuiz() {
+    // Hide the start page and show the quiz container
+    var startPage = document.getElementById('start-page');
+    if (startPage) {
+        startPage.style.display = 'none';
+    }
+    var quizContainer = document.getElementById('quiz-container');
+    if (quizContainer) {
+        quizContainer.style.display = 'block';
+    }
+    // Initialize the quiz
+    initQuiz();
+}
+window.onload = function() {
+    var startButton = document.getElementById('start-button');
+    if (startButton) {
+        startButton.addEventListener('click', startQuiz);
+    }
+};
+</script>
+</body>
+</html>
